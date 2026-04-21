@@ -84,19 +84,19 @@ jobs:
       - name: Checkout deploy repository
         uses: actions/checkout@v4
         with:
-          repository: SAI-KISHORE29/end-to-end-cicd-deployment
+          repository: SAI-KISHORE29/observability-task-deployment
           token: ${{ secrets.GH_PAT }}
-          path: end-to-end-cicd-deployment
+          path: observability-task-deployment
 
       - name: Update image tag in deployment.yaml
         run: |
-          sed -i "s|\(image: .*/fastapi-order-service:\).*|\1${{ steps.version.outputs.tag }}|" end-to-end-cicd-deployment/express-deployment.yaml
+          sed -i "s|\(image: .*/fastapi-order-service:\).*|\1${{ steps.version.outputs.tag }}|" observability-task-deployment/express-deployment.yaml
 
       - name: Raise PR to deploy repository
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
-          cd end-to-end-cicd-deployment
+          cd observability-task-deployment
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           BRANCH="update-image-${{ steps.version.outputs.tag }}"
@@ -105,7 +105,7 @@ jobs:
           git commit -m "chore: update FastAPI service image to ${{ steps.version.outputs.tag }}"
           git push origin $BRANCH
           gh pr create \
-            --repo SAI-KISHORE29/end-to-end-cicd-deployment \
+            --repo SAI-KISHORE29/observability-task-deployment \
             --base main \
             --head $BRANCH \
             --title "chore: update FastAPI service image to ${{ steps.version.outputs.tag }}" \
