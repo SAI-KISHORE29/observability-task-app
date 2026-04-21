@@ -30,8 +30,11 @@ jobs:
       - name: Run tests
         run: pytest
 
-      - name: Build Docker image (validation only)
+      - name: Build Order Service Image (validation only)
         run: docker build -t fastapi-order-service:pr-${{ github.event.pull_request.number }} .
+        
+      - name: Build Inventory Service Image (validation only)
+        run: docker build -t fastapi-inventory-service:pr-${{ github.event.pull_request.number }} .
 
   # ─── Job 2: Merge to main — test + build + push + update repo ────────────────────────────
   test-build-push:
@@ -66,19 +69,23 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build Docker image
+
+      - name: Build Docker images
         run: |
           docker build -t ${{ secrets.DOCKER_USERNAME }}/fastapi-order-service:${{ steps.version.outputs.tag }} .
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/fastapi-inventory-service:${{ steps.version.outputs.tag }} .
 
-      - name: Push Docker image with version tag
+      - name: Push Docker images
         run: |
           docker push ${{ secrets.DOCKER_USERNAME }}/fastapi-order-service:${{ steps.version.outputs.tag }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/fastapi-inventory-service:${{ steps.version.outputs.tag }}
 
-      - name: Print pushed image version
+      - name: Print pushed image versions
         run: |
           echo "==========================================="
-          echo "Docker image successfully pushed:"
+          echo "Docker images successfully pushed:"
           echo "  ${{ secrets.DOCKER_USERNAME }}/fastapi-order-service:${{ steps.version.outputs.tag }}"
+          echo "  ${{ secrets.DOCKER_USERNAME }}/fastapi-inventory-service:${{ steps.version.outputs.tag }}"
           echo "==========================================="
 
       - name: Checkout deploy repository
@@ -88,9 +95,10 @@ jobs:
           token: ${{ secrets.GH_PAT }}
           path: observability-task-deployment
 
-      - name: Update image tag in deployment.yaml
+      - name: Update image tags in deployment.yaml
         run: |
           sed -i "s|\(image: .*/fastapi-order-service:\).*|\1${{ steps.version.outputs.tag }}|" observability-task-deployment/deployment.yaml
+          sed -i "s|\(image: .*/fastapi-inventory-service:\).*|\1${{ steps.version.outputs.tag }}|" observability-task-deployment/deployment.yaml
 
       - name: Raise PR to deploy repository
         env:
@@ -99,14 +107,14 @@ jobs:
           cd observability-task-deployment
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          BRANCH="update-image-${{ steps.version.outputs.tag }}"
+          BRANCH="update-images-${{ steps.version.outputs.tag }}"
           git checkout -b $BRANCH
           git add deployment.yaml
-          git commit -m "chore: update FastAPI service image to ${{ steps.version.outputs.tag }}"
+          git commit -m "chore: update FastAPI service images to ${{ steps.version.outputs.tag }}"
           git push origin $BRANCH
           gh pr create \
             --repo SAI-KISHORE29/observability-task-deployment \
             --base main \
             --head $BRANCH \
-            --title "chore: update FastAPI service image to ${{ steps.version.outputs.tag }}" \
-            --body "Automated PR: update FastAPI container image to \`${{ secrets.DOCKER_USERNAME }}/fastapi-order-service:${{ steps.version.outputs.tag }}\`"
+            --title "chore: update FastAPI service images to ${{ steps.version.outputs.tag }}" \
+            --body "Automated PR: update Order and Inventory API container images to tag \`${{ steps.version.outputs.tag }}\`"
