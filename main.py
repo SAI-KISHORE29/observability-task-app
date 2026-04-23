@@ -15,15 +15,6 @@ from correlation import CorrelationIdMiddleware
 
 APP_NAME = os.getenv("SERVICE_NAME", "order-service")
 
-APP_NAME = os.getenv("SERVICE_NAME", "order-service").lower().strip()
-
-if "inventory" in APP_NAME:
-    logger = inventory_logger
-    service_label = "inventory-service"
-else:
-    logger = order_logger
-    service_label = "order-service"
-
 app = FastAPI(title=APP_NAME)
 Instrumentator().instrument(app).expose(app)
 
