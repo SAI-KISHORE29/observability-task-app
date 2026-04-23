@@ -9,7 +9,7 @@ LOKI_SERVICE_TAG = APP_NAME.lower().replace(" ", "-")
 
 # Set up ONE dynamic Loki handler
 handler = logging_loki.LokiHandler(
-    url="http://loki-gateway.loki.svc.cluster.local/",
+    url="http://loki-gateway.loki.svc.cluster.local/loki/api/v1/push",
     tags={"env": "development", "service": LOKI_SERVICE_TAG},
     version="1",
 )
