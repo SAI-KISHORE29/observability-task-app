@@ -1,29 +1,24 @@
-# logger.py
-import os, logging, logging_loki
+import os
+import logging
+import json
 from correlation import correlation_id_var
 
-LOKI_URL = "http://loki-gateway.monitoring.svc.cluster.local/loki/api/v1/push"
 SERVICE_NAME = os.getenv("SERVICE_NAME", "order-service").lower().replace(" ", "-")
 
-class CorrelationFilter(logging.Filter):
-    def filter(self, record):
-        record.correlationId = correlation_id_var.get()
-        return True
+class StructuredFormatter(logging.Formatter):
+    def format(self, record):
+        return json.dumps({
+            "timestamp": self.formatTime(record),
+            "level": record.levelname,
+            "message": record.getMessage(),
+            "service_name": SERVICE_NAME,
+            "correlationId": correlation_id_var.get(),
+        })
 
-console_handler = logging.StreamHandler()
-console_handler.setFormatter(
-    logging.Formatter('%(asctime)s [%(levelname)s] [%(correlationId)s] %(message)s')
-)
-
-loki_handler = logging_loki.LokiHandler(
-    url=LOKI_URL,
-    tags={"env": "development", "service_name": SERVICE_NAME},  # ← service_name key
-    version="1",
-)
-loki_handler.emitter.session.headers.update({"X-Scope-OrgID": "tenant1"})
+handler = logging.StreamHandler()
+handler.setFormatter(StructuredFormatter())
 
 app_logger = logging.getLogger(SERVICE_NAME)
 app_logger.setLevel(logging.INFO)
-app_logger.addHandler(loki_handler)
-app_logger.addHandler(console_handler)
-app_logger.addFilter(CorrelationFilter())
+app_logger.addHandler(handler)
+app_logger.propagate = False
