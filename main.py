@@ -9,12 +9,18 @@ from datetime import datetime, timezone
 import uvicorn
 from prometheus_fastapi_instrumentator import Instrumentator
 
-from logger import logger
+# Import both loggers from our new logger.py
+from logger import order_logger, inventory_logger
 from correlation import CorrelationIdMiddleware
 
-# --- DYNAMIC CONFIGURATION ---
-# Default to "Order Service" if the variable isn't set
+# --- HARDCODED SELECTION ---
 APP_NAME = os.getenv("SERVICE_NAME", "Order Service")
+
+# Pick the correct logger based on the deployment
+if APP_NAME == "Inventory Service":
+    logger = inventory_logger
+else:
+    logger = order_logger
 
 app = FastAPI(title=APP_NAME)
 Instrumentator().instrument(app).expose(app)
