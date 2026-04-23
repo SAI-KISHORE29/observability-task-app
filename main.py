@@ -10,17 +10,19 @@ import uvicorn
 from prometheus_fastapi_instrumentator import Instrumentator
 
 # Import both loggers from our new logger.py
-from logger import order_logger, inventory_logger
+from logger import app_logger as logger
 from correlation import CorrelationIdMiddleware
 
-# --- HARDCODED SELECTION ---
-APP_NAME = os.getenv("SERVICE_NAME", "Order Service")
+APP_NAME = os.getenv("SERVICE_NAME", "order-service")
 
-# Pick the correct logger based on the deployment
-if APP_NAME == "Inventory Service":
+APP_NAME = os.getenv("SERVICE_NAME", "order-service").lower().strip()
+
+if "inventory" in APP_NAME:
     logger = inventory_logger
+    service_label = "inventory-service"
 else:
     logger = order_logger
+    service_label = "order-service"
 
 app = FastAPI(title=APP_NAME)
 Instrumentator().instrument(app).expose(app)
