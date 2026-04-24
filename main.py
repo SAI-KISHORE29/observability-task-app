@@ -23,7 +23,6 @@ app.add_middleware(CorrelationIdMiddleware)
 
 @app.middleware("http")
 async def request_logging_middleware(request: Request, call_next):
-    """Pino-style request logging middleware"""
     try:
         response = await call_next(request)
         logger.info(f"request_completed method={request.method} url={str(request.url)}")
